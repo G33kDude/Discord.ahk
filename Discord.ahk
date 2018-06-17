@@ -24,7 +24,7 @@ class Discord extends WebSocket
 		URL := this.CallAPI("GET", "/gateway/bot").url
 		
 		; Connect to the server
-		this.base.base.__New.Call(this, URL "?v=5&encoding=json")
+		this.base.base.__New.Call(this, URL "?v=6&encoding=json")
 	}
 	
 	; Calls the REST API
@@ -157,7 +157,7 @@ Print(x*){
 	for a, b in x
 	{
 		if IsObject(b)
-			list .= Json_FromObj(b) "`t"
+			list .= Jxon_Dump(b) "`t"
 		else
 			list .= b "`t"
 	}
