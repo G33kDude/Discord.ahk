@@ -19,7 +19,7 @@ class Discord extends WebSocket
 		URL := this.CallAPI("GET", "/gateway/bot").url
 		
 		; Connect to the server
-		this.base.base.__New.Call(this, URL "?v=6&encoding=json")
+		WebSocket.__New.Call(this, URL "?v=6&encoding=json")
 	}
 	
 	; Calls the REST API
@@ -86,31 +86,32 @@ class Discord extends WebSocket
 		if Data.s
 			this.Seq := data.s
 		
-		if (Data.op == 10) ; OP 10 Hello
-		{
-			this.HeartbeatACK := True
-			Interval := Data.d.heartbeat_interval
-			SendHeartbeat := this.BoundFuncs["SendHeartbeat"]
-			SetTimer, %SendHeartbeat%, %Interval%
-		}
-		else if (Data.op == 11) ; OP 11 Heartbeat ACK
-		{
-			this.HeartbeatACK := True
-		}
-		else if (Data.op == 0) ; OP 0 Dispatch
-		{
-			if (Data.t == "READY")
-			{
-				this.user := Data.d.user
-			}
-			if (Data.t == "MESSAGE_CREATE")
-			{
-				if (Data.d.author.id == this.user.id)
-					return
-				
-				this.SendMessage(Data.d.channel_id, Data.d.content)
-			}
-		}
+		; Call the defined handler, if any
+		fn := this["OP" Data.op]
+		%fn%(this, Data)
+	}
+	
+	; OP 10 Hello
+	OP10(Data)
+	{
+		this.HeartbeatACK := True
+		Interval := Data.d.heartbeat_interval
+		SendHeartbeat := this.BoundFuncs["SendHeartbeat"]
+		SetTimer, %SendHeartbeat%, %Interval%
+	}
+	
+	; OP 11 Heartbeat ACK
+	OP11(Data)
+	{
+		this.HeartbeatACK := True
+	}
+	
+	; OP 0 Dispatch
+	OP0(Data)
+	{
+		; Call the defined handler, if any
+		fn := this["OP0_" Data.t]
+		%fn%(this, Data.d)
 	}
 	
 	; Called by the JS on WS error
