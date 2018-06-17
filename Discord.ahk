@@ -1,7 +1,7 @@
 ﻿#Persistent
 
-#Include %A_LineFile%\..\WebSocket.ahk\WebSocket.ahk
-#Include %A_LineFile%\..\AutoHotkey-JSON\Jxon.ahk
+#Include %A_LineFile%\..\Lib\WebSocket.ahk\WebSocket.ahk
+#Include %A_LineFile%\..\Lib\AutoHotkey-JSON\Jxon.ahk
 
 x := new Discord(FileOpen(A_Desktop "\token.txt", "r").Read())
 return
