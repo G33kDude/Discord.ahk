@@ -39,7 +39,7 @@ class Discord extends WebSocket
 	; Sends data through the websocket
 	Send(Data)
 	{
-		this.WebSock.Send(Jxon_Dump(Data))
+		WebSocket.Send.Call(this, Jxon_Dump(Data))
 	}
 	
 	; Sends the Identify operation

@@ -3,4 +3,4 @@
 	url = https://github.com/G33kDude/WebSocket.ahk.git
 [submodule "AutoHotkey-JSON"]
 	path = Lib/AutoHotkey-JSON
-	url = https://github.com/cocobelgica/AutoHotkey-JSON.git
+	url = https://github.com/G33kDude/AutoHotkey-JSON.git
