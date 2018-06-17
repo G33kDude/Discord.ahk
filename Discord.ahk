@@ -1,10 +1,5 @@
-﻿#Persistent
-
-#Include %A_LineFile%\..\Lib\WebSocket.ahk\WebSocket.ahk
+﻿#Include %A_LineFile%\..\Lib\WebSocket.ahk\WebSocket.ahk
 #Include %A_LineFile%\..\Lib\AutoHotkey-JSON\Jxon.ahk
-
-x := new Discord(FileOpen(A_Desktop "\token.txt", "r").Read())
-return
 
 class Discord extends WebSocket
 {
@@ -44,7 +39,6 @@ class Discord extends WebSocket
 	; Sends data through the websocket
 	Send(Data)
 	{
-		Print("<", Data)
 		this.WebSock.Send(Jxon_Dump(Data))
 	}
 	
@@ -87,7 +81,6 @@ class Discord extends WebSocket
 	OnMessage(Event)
 	{
 		Data := Jxon_Load(Event.data)
-		Print(">", Data)
 		
 		; Save the most recent sequence number for heartbeats
 		if Data.s
@@ -123,13 +116,13 @@ class Discord extends WebSocket
 	; Called by the JS on WS error
 	OnError(Event)
 	{
-		Print("Error", Event.data)
+		throw Exception("Unhandled Discord.ahk WebSocket Error")
 	}
 	
 	; Called by the JS on WS close
 	OnClose(Event)
 	{
-		Print("Close")
+		throw Exception("Unhandled Discord.ahk WebSocket Close")
 	}
 	
 	; Gets called periodically by a timer to send a heartbeat operation
@@ -149,17 +142,4 @@ class Discord extends WebSocket
 		this.HeartbeatACK := False
 		this.Send({"op": 1, "d": this.Seq})
 	}
-}
-
-Print(x*){
-	static c := FileOpen("CONOUT$", ("rw", DllCall("AllocConsole")))
-	
-	for a, b in x
-	{
-		if IsObject(b)
-			list .= Jxon_Dump(b) "`t"
-		else
-			list .= b "`t"
-	}
-	c.Write(SubStr(list, 1, -1) "`n"), c.__Handle
 }
