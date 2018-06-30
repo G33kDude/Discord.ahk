@@ -1,16 +1,11 @@
-﻿#Include %A_LineFile%\..\Lib\WebSocket.ahk\WebSocket.ahk
-#Include %A_LineFile%\..\Lib\AutoHotkey-JSON\Jxon.ahk
-
-class Discord extends WebSocket
+﻿class Discord
 {
 	static BaseURL := "https://discordapp.com/api"
 	
 	__New(Token)
 	{
 		; Bind some functions for later use
-		this.BoundFuncs := {}
-		for each, name in ["SaveWS", "OnOpen", "OnClose", "OnError", "OnMessage", "SendHeartbeat"]
-			this.BoundFuncs[name] := this[name].Bind(this)
+		this.SendHeartbeatBound := this.SendHeartbeat.Bind(this)
 		
 		; Save the token
 		this.Token := Token
@@ -19,7 +14,8 @@ class Discord extends WebSocket
 		URL := this.CallAPI("GET", "/gateway/bot").url
 		
 		; Connect to the server
-		WebSocket.__New.Call(this, URL "?v=6&encoding=json")
+		this.ws := {"base": this.WebSocket, "_Event": this._Event, "Parent": &this}
+		this.ws.__New(URL "?v=6&encoding=json")
 	}
 	
 	; Calls the REST API
@@ -30,16 +26,16 @@ class Discord extends WebSocket
 		Http.SetRequestHeader("Authorization", "Bot " this.Token)
 		Http.SetRequestHeader("Content-Type", "application/json")
 		if Data
-			Http.Send(Jxon_Dump(Data))
+			Http.Send(this.Jxon_Dump(Data))
 		else
 			Http.Send()
-		return Jxon_Load(Http.ResponseText())
+		return this.Jxon_Load(Http.ResponseText())
 	}
 	
 	; Sends data through the websocket
 	Send(Data)
 	{
-		WebSocket.Send.Call(this, Jxon_Dump(Data))
+		this.ws.Send(this.Jxon_Dump(Data))
 	}
 	
 	; Sends the Identify operation
@@ -71,6 +67,19 @@ class Discord extends WebSocket
 		return this.CallAPI("POST", "/channels/" channel_id "/messages", {"content": content})
 	}
 	
+	/*
+		Internal function triggered when the script receives a message on
+		the WebSocket connected to the page.
+	*/
+	_Event(EventName, Event)
+	{
+		; If it was called from the WebSocket adjust the class context
+		if this.Parent
+			this := Object(this.Parent)
+		
+		this["On" EventName](Event)
+	}
+	
 	; Called by the JS on WS open
 	OnOpen(Event)
 	{
@@ -80,7 +89,7 @@ class Discord extends WebSocket
 	; Called by the JS on WS message
 	OnMessage(Event)
 	{
-		Data := Jxon_Load(Event.data)
+		Data := this.Jxon_Load(Event.data)
 		
 		; Save the most recent sequence number for heartbeats
 		if Data.s
@@ -96,7 +105,7 @@ class Discord extends WebSocket
 	{
 		this.HeartbeatACK := True
 		Interval := Data.d.heartbeat_interval
-		SendHeartbeat := this.BoundFuncs["SendHeartbeat"]
+		SendHeartbeat := this.SendHeartbeatBound
 		SetTimer, %SendHeartbeat%, %Interval%
 	}
 	
@@ -143,4 +152,7 @@ class Discord extends WebSocket
 		this.HeartbeatACK := False
 		this.Send({"op": 1, "d": this.Seq})
 	}
+	
+	#Include %A_LineFile%\..\Lib\WebSocket.ahk\WebSocket.ahk
+	#Include %A_LineFile%\..\Lib\AutoHotkey-JSON\Jxon.ahk
 }
