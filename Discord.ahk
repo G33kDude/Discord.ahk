@@ -22,14 +22,39 @@
 	CallAPI(Method, Endpoint, Data="")
 	{
 		Http := ComObjCreate("WinHTTP.WinHTTPRequest.5.1")
-		Http.Open(Method, this.BaseURL . Endpoint)
-		Http.SetRequestHeader("Authorization", "Bot " this.Token)
-		Http.SetRequestHeader("Content-Type", "application/json")
-		if Data
-			Http.Send(this.Jxon_Dump(Data))
-		else
-			Http.Send()
-		return this.Jxon_Load(Http.ResponseText())
+		
+		; Try the request multiple times if necessary
+		Loop, 2
+		{
+			; Send the request
+			Http.Open(Method, this.BaseURL . Endpoint)
+			Http.SetRequestHeader("Authorization", "Bot " this.Token)
+			Http.SetRequestHeader("Content-Type", "application/json")
+			(Data ? Http.Send(this.Jxon_Dump(Data)) : Http.Send())
+			
+			; Handle rate limiting
+			if (Http.status == 429)
+			{
+				Response := this.Jxon_Load(Http.ResponseText())
+				if (Response.retry_after == "")
+					throw Exception("Failed to load rate limit retry_after")
+				
+				; Wait then retry the request
+				Sleep, % Response.retry_after
+				continue
+			}
+			
+			break
+		}
+		
+		; Request was unsuccessful
+		if (Http.status != 200 && Http.status != 204)
+		{
+			throw Exception("Request failed: " Http.status
+				,, Method " " Endpoint "`n" Http.responseText)
+		}
+		
+		return this.Jxon_Load(Http.responseText)
 	}
 	
 	; Sends data through the websocket
